@@ -5,12 +5,13 @@ echo "Instalando dependencias del sistema..."
 /usr/bin/yum install -y gcc-c++ python3-devel
 
 echo "Instalando dependencias de Python..."
-/usr/bin/pip3 install --no-cache-dir -r /tmp/src/requirements.txt
+# Usar python3 -m pip para asegurar compatibilidad con el entorno
+python3 -m pip install --no-cache-dir -r /tmp/src/requirements.txt
 
 echo "Compilando el módulo C++..."
 cd /tmp/src
-/usr/bin/pip3 install pybind11
-PYBIND11_INCLUDES=$(/usr/bin/python3 -m pybind11 --includes)
+python3 -m pip install pybind11
+PYBIND11_INCLUDES=$(python3 -m pybind11 --includes)
 /usr/bin/g++ -O3 -Wall -shared -std=c++11 -fPIC $PYBIND11_INCLUDES bindings.cpp -o cosine_module.so
 
 echo "Copiando archivos..."
@@ -21,8 +22,9 @@ echo "Configurando caché..."
 mkdir -p /opt/app-root/src/cache
 chmod -R 777 /opt/app-root/src/cache
 
-# Asegurarse de que S2I reconozca main.py como el módulo principal
-echo "Configurando APP_MODULE..."
+echo "Configurando APP_MODULE y PATH..."
+# Asegurarse de que los ejecutables instalados por pip estén en el PATH
+echo "export PATH=/opt/app-root/bin:$PATH" >> /opt/app-root/etc/s2i.env
 echo "export APP_MODULE=main:app" >> /opt/app-root/etc/s2i.env
 
 echo "Limpiando..."
