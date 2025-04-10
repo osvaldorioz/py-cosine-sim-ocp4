@@ -1,0 +1,31 @@
+#!/bin/bash
+# Script de ensamblaje para S2I
+
+# Instalar dependencias del sistema
+echo "Instalando dependencias del sistema..."
+/usr/bin/yum install -y gcc-c++ cmake eigen3-devel python3-devel
+
+# Instalar dependencias de Python
+echo "Instalando dependencias de Python..."
+/usr/bin/pip3 install --no-cache-dir -r /tmp/src/requirements.txt
+
+# Compilar el módulo C++
+echo "Compilando el módulo C++..."
+cd /tmp/src
+/usr/bin/pip3 install pybind11
+PYBIND11_INCLUDES=$(/usr/bin/python3 -m pybind11 --includes)
+/usr/bin/g++ -O3 -Wall -shared -std=c++11 -fPIC $PYBIND11_INCLUDES -I/usr/include/eigen3 bindings.cpp -o cosine_module.so
+
+# Copiar archivos al directorio final
+echo "Copiando archivos..."
+mkdir -p /opt/app-root/src
+cp -r /tmp/src/main.py /tmp/src/cosine_module.so /tmp/src/requirements.txt /opt/app-root/src/
+
+# Configurar el directorio de caché
+echo "Configurando caché..."
+mkdir -p /opt/app-root/src/cache
+chmod -R 777 /opt/app-root/src/cache
+
+# Limpiar
+echo "Limpiando..."
+rm -rf /tmp/src/*
